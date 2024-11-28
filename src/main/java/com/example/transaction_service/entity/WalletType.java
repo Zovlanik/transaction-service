@@ -1,16 +1,14 @@
 package com.example.transaction_service.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity(name = "wallet_types")
+@Entity
 @Data
+@Table(name = "wallet_types")
 public class WalletType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

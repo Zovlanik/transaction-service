@@ -12,6 +12,6 @@ import java.util.UUID;
 @Repository
 public interface WalletRepository extends JpaRepository<Wallet, UUID> {
     List<Wallet> findAllByUserUid (UUID userUid);
-    @Query("SELECT w FROM wallets w JOIN w.walletType wt WHERE w.userUid = :userUid AND wt.currencyCode = :currency")
+    @Query("SELECT w FROM Wallet w JOIN w.walletType wt WHERE w.userUid = :userUid AND wt.currencyCode = :currency")
     List<Wallet> findAllByUserUidAndCurrency (@Param("userUid") UUID userUid, @Param("currency") String currency);
 }

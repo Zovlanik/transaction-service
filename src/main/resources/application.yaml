@@ -14,9 +14,6 @@ spring:
     hibernate:
       format_sql: true
       type: trace
-  jackson:
-    serialization:
-      fail-on-empty-beans: false #todo: в идеале убрать это подавление проблем с прокси-объектами и использовать DTO для входящих и исходящих сущностей
   flyway:
     url: jdbc:postgresql://localhost:5432/transactionservice
     enabled: true

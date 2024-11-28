@@ -7,6 +7,7 @@ import com.example.transaction_service.entity.WalletType;
 import com.example.transaction_service.mapper.WalletMapper;
 import com.example.transaction_service.repository.WalletRepository;
 import com.example.transaction_service.repository.WalletTypeRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,24 +26,28 @@ public class WalletService {
 
     public WalletDtoResponse createWallet(WalletDtoRequest walletDtoRequest) {
         Wallet wallet = mapper.map(walletDtoRequest);
-        WalletType walletType = walletTypeRepository.getById(walletDtoRequest.getWalletTypeUid());
+        UUID walletTypeUid = walletDtoRequest.getWalletTypeUid();
+        WalletType walletType = walletTypeRepository.findById(walletTypeUid)
+                .orElseThrow(() -> new EntityNotFoundException("WalletType not found for ID: " + walletTypeUid));
 
         wallet.setWalletType(walletType);
         Wallet savedWallet = repository.save(wallet);
-        return mapper.mapRs(savedWallet);
+        return mapper.map(savedWallet);
     }
 
     public WalletDtoResponse getWallet(UUID uid) {
-        Wallet wallet = repository.getById(uid);
-        return mapper.mapRs(wallet);
+        Wallet wallet = repository.findById(uid)
+                .orElseThrow(() -> new EntityNotFoundException("Wallet not found for ID: " + uid));
+        return mapper.map(wallet);
     }
 
     public WalletDtoResponse updateWallet(UUID uid, WalletDtoRequest walletDtoRequest) {
-        Wallet oldWallet = repository.getById(uid);
+        Wallet oldWallet = repository.findById(uid)
+                .orElseThrow(() -> new EntityNotFoundException("Wallet not found for ID: " + uid));
         mapper.updateWalletFromDto(walletDtoRequest, oldWallet);
         oldWallet.setModifiedAt(LocalDateTime.now());
         Wallet savedWallet = repository.save(oldWallet);
-        return mapper.mapRs(savedWallet);
+        return mapper.map(savedWallet);
     }
 
     public void deleteWallet(UUID uid) {
@@ -51,13 +56,13 @@ public class WalletService {
 
     public List<WalletDtoResponse> getWalletByUserUid(UUID userUid){
         return repository.findAllByUserUid(userUid).stream()
-                .map(mapper::mapRs)
+                .map(mapper::map)
                 .toList();
     }
 
     public List<WalletDtoResponse> findAllByUserUidAndCurrency(UUID userUid, String currency){
         return repository.findAllByUserUidAndCurrency(userUid,currency).stream()
-                .map(mapper::mapRs)
+                .map(mapper::map)
                 .toList();
     }
 }
