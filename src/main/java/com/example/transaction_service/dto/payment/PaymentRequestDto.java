@@ -1,23 +1,19 @@
-package com.example.transaction_service.dto;
+package com.example.transaction_service.dto.payment;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Data
-public class WalletDtoRequest {
-
-    private LocalDateTime createdAt;
-    private LocalDateTime modifiedAt;
-    private String name;
-    private UUID walletTypeUid;
+public class PaymentRequestDto {
     private UUID userUid;
+    private String walletUid;
+    private BigDecimal amount;
     private String status;
-    private BigDecimal balance;
-    private LocalDateTime archivedAt;
+    private String comment;
+    private Long paymentMethodId;
 }

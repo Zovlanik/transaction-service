@@ -2,6 +2,7 @@ package com.example.transaction_service.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,12 +10,14 @@ import java.util.UUID;
 
 @Entity
 @Data
-@Table(name = "top_up_requests")
+@Table(name = "withdrawal_requests")
 public class WithdrawalRequest {
 
     @Id
     @GeneratedValue
     private UUID uid;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)

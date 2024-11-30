@@ -2,6 +2,7 @@ package com.example.transaction_service.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,6 +15,8 @@ public class TransferRequest {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID uid;
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     private String systemRate;
     @ManyToOne(fetch = FetchType.LAZY)

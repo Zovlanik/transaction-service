@@ -1,4 +1,4 @@
-package com.example.transaction_service.dto;
+package com.example.transaction_service.dto.wallet;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -10,12 +10,12 @@ import java.util.UUID;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Data
-public class WalletDtoResponse {
-    private UUID uid;
+public class WalletDtoRequest {
+
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
     private String name;
-    private WalletTypeDto walletType;
+    private UUID walletTypeUid;
     private UUID userUid;
     private String status;
     private BigDecimal balance;

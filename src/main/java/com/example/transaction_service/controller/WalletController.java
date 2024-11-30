@@ -1,7 +1,7 @@
 package com.example.transaction_service.controller;
 
-import com.example.transaction_service.dto.WalletDtoRequest;
-import com.example.transaction_service.dto.WalletDtoResponse;
+import com.example.transaction_service.dto.wallet.WalletDtoRequest;
+import com.example.transaction_service.dto.wallet.WalletDtoResponse;
 import com.example.transaction_service.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

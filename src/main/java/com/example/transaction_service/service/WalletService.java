@@ -1,7 +1,7 @@
 package com.example.transaction_service.service;
 
-import com.example.transaction_service.dto.WalletDtoRequest;
-import com.example.transaction_service.dto.WalletDtoResponse;
+import com.example.transaction_service.dto.wallet.WalletDtoRequest;
+import com.example.transaction_service.dto.wallet.WalletDtoResponse;
 import com.example.transaction_service.entity.Wallet;
 import com.example.transaction_service.entity.WalletType;
 import com.example.transaction_service.mapper.WalletMapper;
