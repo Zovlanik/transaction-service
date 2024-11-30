@@ -9,12 +9,13 @@ import java.util.UUID;
 
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 @Data
-public class PaymentRequestDto {
+public class TransactionDto {
     private UUID uid;
     private UUID userUid;
     private String walletUid;
+    private String walletName;
     private BigDecimal amount;
-    private String status;
-    private String comment;
-    private Long paymentMethodId;
+    private String type;
+    private String state;
+    private String paymentRequestDtoUid;
 }

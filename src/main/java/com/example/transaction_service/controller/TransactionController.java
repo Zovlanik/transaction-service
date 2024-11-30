@@ -1,6 +1,7 @@
 package com.example.transaction_service.controller;
 
 import com.example.transaction_service.dto.payment.TopUpRequestDto;
+import com.example.transaction_service.dto.payment.TransactionDto;
 import com.example.transaction_service.dto.payment.TransferRequestDto;
 import com.example.transaction_service.dto.payment.WithdrawalRequestDto;
 import com.example.transaction_service.service.TransactionService;
@@ -30,5 +31,10 @@ public class TransactionController {
     @PostMapping("/transfer")
     public TransferRequestDto transfer(@RequestBody TransferRequestDto transferRequestDto){
         return service.transfer(transferRequestDto);
+    }
+
+    @PostMapping("/transaction")
+    public TransactionDto transaction(@RequestBody TransactionDto transactionDto){
+        return service.transaction(transactionDto);
     }
 }

@@ -1,10 +1,13 @@
 package com.example.transaction_service.service;
 
 import com.example.transaction_service.dto.payment.TopUpRequestDto;
+import com.example.transaction_service.dto.payment.TransactionDto;
 import com.example.transaction_service.dto.payment.TransferRequestDto;
 import com.example.transaction_service.dto.payment.WithdrawalRequestDto;
 import com.example.transaction_service.entity.*;
+import com.example.transaction_service.handler.FailedTransactionException;
 import com.example.transaction_service.mapper.TopUpRequestMapper;
+import com.example.transaction_service.mapper.TransactionMapper;
 import com.example.transaction_service.mapper.TransferRequestMapper;
 import com.example.transaction_service.mapper.WithdrawalRequestMapper;
 import com.example.transaction_service.repository.*;
@@ -12,6 +15,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -23,9 +27,11 @@ public class TransactionService {
     private final WithdrawalRequestRepository withdrawalRequestRepository;
     private final TransferRequestRepository transferRequestRepository;
     private final WalletRepository walletRepository;
+    private final TransactionRepository transactionRepository;
     private final TransferRequestMapper transferRequestMapper;
     private final TopUpRequestMapper topUpRequestMapper;
     private final WithdrawalRequestMapper withdrawalRequestMapper;
+    private final TransactionMapper transactionMapper;
 
     public TopUpRequestDto topUp(TopUpRequestDto topUpRequestDto) {
         TopUpRequest topUpRequest = topUpRequestMapper.map(topUpRequestDto);
@@ -71,5 +77,38 @@ public class TransactionService {
         paymentRequestRepository.save(paymentRequestFrom);
         TransferRequest savedTransferRequest = transferRequestRepository.save(transferRequest);
         return transferRequestMapper.map(savedTransferRequest);
+    }
+
+    public TransactionDto transaction(TransactionDto transactionDto) {
+        Transaction transaction = transactionMapper.map(transactionDto);
+        UUID transactionWalletUid = UUID.fromString(transactionDto.getWalletUid());
+        Wallet transactionWallet = getWallet(transactionWalletUid);
+        transaction.setWallet(transactionWallet);
+        UUID paymentRequestDtoUid = UUID.fromString(transactionDto.getPaymentRequestDtoUid());
+        PaymentRequest transactionPaymentRequest = paymentRequestRepository.findById(paymentRequestDtoUid)
+                .orElseThrow(() -> new EntityNotFoundException("PaymentRequest not found for ID: " + paymentRequestDtoUid));
+        transaction.setPaymentRequest(transactionPaymentRequest);
+        return applyTransaction(transaction);
+    }
+
+    private TransactionDto applyTransaction(Transaction transaction) {
+
+        // недостаточно денег на другом кошельке для пополнения
+        BigDecimal amount = transaction.getAmount(); // сумма для пополнения
+        BigDecimal balance = transaction.getPaymentRequest().getWallet().getBalance();
+        if(balance.compareTo(amount) < 0){
+            throw new FailedTransactionException("Not enough money.");
+        } else {
+            Wallet walletFrom = transaction.getPaymentRequest().getWallet();
+            Wallet walletTo = transaction.getWallet();
+            walletFrom.setBalance(walletFrom.getBalance().subtract(amount));
+            walletTo.setBalance(walletTo.getBalance().add(amount));
+            walletRepository.save(walletFrom);
+            walletRepository.save(walletTo);
+        }
+
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        TransactionDto map = transactionMapper.map(savedTransaction);
+        return map;
     }
 }

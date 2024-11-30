@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.*;
+
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -19,6 +19,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<Object> handleEntityNotFoundException(EntityNotFoundException ex) {
         return buildErrorResponse(ex.getMessage(), NOT_FOUND);
+    }
+
+    @ExceptionHandler(FailedTransactionException.class)
+    public ResponseEntity<Object> handleFailedTransactionException(FailedTransactionException ex) {
+        return buildErrorResponse(ex.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
