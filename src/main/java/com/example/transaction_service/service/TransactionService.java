@@ -111,4 +111,10 @@ public class TransactionService {
         TransactionDto map = transactionMapper.map(savedTransaction);
         return map;
     }
+
+    public TransactionDto transactionStatus(UUID uid){
+        Transaction transaction = transactionRepository.findById(uid)
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found for ID: " + uid));
+        return transactionMapper.map(transaction);
+    }
 }

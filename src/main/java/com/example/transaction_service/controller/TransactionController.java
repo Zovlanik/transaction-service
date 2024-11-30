@@ -6,10 +6,9 @@ import com.example.transaction_service.dto.payment.TransferRequestDto;
 import com.example.transaction_service.dto.payment.WithdrawalRequestDto;
 import com.example.transaction_service.service.TransactionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -36,5 +35,10 @@ public class TransactionController {
     @PostMapping("/transaction")
     public TransactionDto transaction(@RequestBody TransactionDto transactionDto){
         return service.transaction(transactionDto);
+    }
+
+    @GetMapping("/{uid}/status")
+    public TransactionDto transactionStatus(@PathVariable UUID uid){
+        return service.transactionStatus(uid);
     }
 }
