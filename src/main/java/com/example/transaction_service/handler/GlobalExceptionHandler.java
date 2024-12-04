@@ -26,6 +26,11 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(ex.getMessage(), BAD_REQUEST);
     }
 
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<Object> handleUnsupportedOperationException(UnsupportedOperationException ex) {
+        return buildErrorResponse(ex.getMessage(), BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleGlobalException(Exception ex) {
         return buildErrorResponse("An unexpected error occurred: " + ex.getMessage(), INTERNAL_SERVER_ERROR);

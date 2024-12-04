@@ -1,15 +1,9 @@
 package com.example.transaction_service.service;
 
-import com.example.transaction_service.dto.payment.TopUpRequestDto;
 import com.example.transaction_service.dto.payment.TransactionDto;
-import com.example.transaction_service.dto.payment.TransferRequestDto;
-import com.example.transaction_service.dto.payment.WithdrawalRequestDto;
 import com.example.transaction_service.entity.*;
 import com.example.transaction_service.handler.FailedTransactionException;
-import com.example.transaction_service.mapper.TopUpRequestMapper;
 import com.example.transaction_service.mapper.TransactionMapper;
-import com.example.transaction_service.mapper.TransferRequestMapper;
-import com.example.transaction_service.mapper.WithdrawalRequestMapper;
 import com.example.transaction_service.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,88 +22,104 @@ public class TransactionService {
     private final TransferRequestRepository transferRequestRepository;
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
-    private final TransferRequestMapper transferRequestMapper;
-    private final TopUpRequestMapper topUpRequestMapper;
-    private final WithdrawalRequestMapper withdrawalRequestMapper;
     private final TransactionMapper transactionMapper;
 
-    public TopUpRequestDto topUp(TopUpRequestDto topUpRequestDto) {
-        TopUpRequest topUpRequest = topUpRequestMapper.map(topUpRequestDto);
-        UUID walletUid = UUID.fromString(topUpRequestDto.getPaymentRequestDto().getWalletUid());
-        Wallet wallet = getWallet(walletUid);
-
-        PaymentRequest paymentRequest = topUpRequest.getPaymentRequest();
-        paymentRequest.setWallet(wallet);
-        paymentRequestRepository.save(paymentRequest);
-        TopUpRequest savedTopUpRequest = topUpRequestRepository.save(topUpRequest);
-        return topUpRequestMapper.map(savedTopUpRequest);
-    }
-
-    public WithdrawalRequestDto withdrawal(WithdrawalRequestDto withdrawalRequestDto) {
-        WithdrawalRequest withdrawalRequest = withdrawalRequestMapper.map(withdrawalRequestDto);
-        UUID walletUid = UUID.fromString(withdrawalRequestDto.getPaymentRequestDto().getWalletUid());
-        Wallet wallet = getWallet(walletUid);
-
-        PaymentRequest paymentRequest = withdrawalRequest.getPaymentRequest();
-        paymentRequest.setWallet(wallet);
-        paymentRequestRepository.save(paymentRequest);
-        WithdrawalRequest savedWithdrawalRequest = withdrawalRequestRepository.save(withdrawalRequest);
-        return withdrawalRequestMapper.map(savedWithdrawalRequest);
-    }
-
-    private Wallet getWallet(UUID walletUid) {
-        return walletRepository.findById(walletUid)
-                .orElseThrow(() -> new EntityNotFoundException("Wallet not found for ID: " + walletUid));
-    }
-
-    public TransferRequestDto transfer(TransferRequestDto transferRequestDto) {
-        TransferRequest transferRequest = transferRequestMapper.map(transferRequestDto);
-        UUID walletUidTo = UUID.fromString(transferRequestDto.getPaymentRequestDtoTo().getWalletUid());
-        Wallet walletTo = getWallet(walletUidTo);
-        UUID walletUidFrom = UUID.fromString(transferRequestDto.getPaymentRequestDtoFrom().getWalletUid());
-        Wallet walletFrom = getWallet(walletUidFrom);
-
-        PaymentRequest paymentRequestTo = transferRequest.getPaymentRequestTo();
-        PaymentRequest paymentRequestFrom = transferRequest.getPaymentRequestFrom();
-        paymentRequestTo.setWallet(walletTo);
-        paymentRequestFrom.setWallet(walletFrom);
-        paymentRequestRepository.save(paymentRequestTo);
-        paymentRequestRepository.save(paymentRequestFrom);
-        TransferRequest savedTransferRequest = transferRequestRepository.save(transferRequest);
-        return transferRequestMapper.map(savedTransferRequest);
-    }
 
     public TransactionDto transaction(TransactionDto transactionDto) {
-        Transaction transaction = transactionMapper.map(transactionDto);
-        UUID transactionWalletUid = UUID.fromString(transactionDto.getWalletUid());
-        Wallet transactionWallet = getWallet(transactionWalletUid);
-        transaction.setWallet(transactionWallet);
-        UUID paymentRequestDtoUid = UUID.fromString(transactionDto.getPaymentRequestDtoUid());
-        PaymentRequest transactionPaymentRequest = paymentRequestRepository.findById(paymentRequestDtoUid)
-                .orElseThrow(() -> new EntityNotFoundException("PaymentRequest not found for ID: " + paymentRequestDtoUid));
-        transaction.setPaymentRequest(transactionPaymentRequest);
-        return applyTransaction(transaction);
+        TransactionType transactionType = transactionDto.getType();
+
+        return switch (transactionType) {
+            case TOP_UP -> applyTopUp(transactionDto);
+            case WITHDRAWAL -> applyWithdrawal(transactionDto);
+            case TRANSFER -> applyTransfer(transactionDto);
+        };
     }
 
-    private TransactionDto applyTransaction(Transaction transaction) {
+    private TransactionDto applyTopUp(TransactionDto transactionDto){
 
-        // недостаточно денег на другом кошельке для пополнения
-        BigDecimal amount = transaction.getAmount(); // сумма для пополнения
-        BigDecimal balance = transaction.getPaymentRequest().getWallet().getBalance();
-        if(balance.compareTo(amount) < 0){
-            throw new FailedTransactionException("Not enough money.");
-        } else {
-            Wallet walletFrom = transaction.getPaymentRequest().getWallet();
-            Wallet walletTo = transaction.getWallet();
-            walletFrom.setBalance(walletFrom.getBalance().subtract(amount));
-            walletTo.setBalance(walletTo.getBalance().add(amount));
-            walletRepository.save(walletFrom);
-            walletRepository.save(walletTo);
-        }
+        UUID paymentRequestUid = UUID.fromString(transactionDto.getPaymentRequestDtoUid());
+        TopUpRequest topUpRequest = topUpRequestRepository.findById(paymentRequestUid)
+                .orElseThrow(() -> new EntityNotFoundException("PaymentRequest not found for ID: " + paymentRequestUid));
+        PaymentRequest paymentRequest = topUpRequest.getPaymentRequest();
+        checkTransactionAndWallet(transactionDto,paymentRequest);
 
+        Wallet wallet = paymentRequest.getWallet();
+        BigDecimal balance = wallet.getBalance();
+        BigDecimal add = balance.add(transactionDto.getAmount());
+        wallet.setBalance(add);
+        wallet = walletRepository.save(wallet);
+        paymentRequest.setStatus(Status.DONE);
+        paymentRequestRepository.save(paymentRequest);
+        Transaction transaction = transactionMapper.map(transactionDto);
+        transaction.setWallet(wallet);
+        transaction.setPaymentRequest(paymentRequest);
         Transaction savedTransaction = transactionRepository.save(transaction);
-        TransactionDto map = transactionMapper.map(savedTransaction);
-        return map;
+        return transactionMapper.map(savedTransaction);
+    }
+
+    private TransactionDto applyWithdrawal(TransactionDto transactionDto){
+
+        UUID paymentRequestUid = UUID.fromString(transactionDto.getPaymentRequestDtoUid());
+        WithdrawalRequest withdrawalRequest = withdrawalRequestRepository.findById(paymentRequestUid)
+                .orElseThrow(() -> new EntityNotFoundException("PaymentRequest not found for ID: " + paymentRequestUid));
+        PaymentRequest paymentRequest = withdrawalRequest.getPaymentRequest();
+        checkTransactionAndWallet(transactionDto,paymentRequest);
+
+        Wallet wallet = paymentRequest.getWallet();
+        BigDecimal balance = wallet.getBalance();
+        BigDecimal subtract = balance.subtract(transactionDto.getAmount());
+        wallet.setBalance(subtract);
+        wallet = walletRepository.save(wallet);
+        paymentRequest.setStatus(Status.DONE);
+        paymentRequestRepository.save(paymentRequest);
+        Transaction transaction = transactionMapper.map(transactionDto);
+        transaction.setWallet(wallet);
+        transaction.setPaymentRequest(paymentRequest);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        return transactionMapper.map(savedTransaction);
+    }
+
+    private TransactionDto applyTransfer(TransactionDto transactionDto){
+
+        UUID paymentRequestUid = UUID.fromString(transactionDto.getPaymentRequestDtoUid());
+        TransferRequest transferRequest = transferRequestRepository.findById(paymentRequestUid)
+                .orElseThrow(() -> new EntityNotFoundException("PaymentRequest not found for ID: " + paymentRequestUid));
+        PaymentRequest paymentRequestFrom = transferRequest.getPaymentRequestFrom();
+        PaymentRequest paymentRequestTo = transferRequest.getPaymentRequestTo();
+
+        Wallet walletFrom = paymentRequestFrom.getWallet();
+        Wallet walletTo = paymentRequestTo.getWallet();
+
+        BigDecimal amount = paymentRequestFrom.getAmount();
+
+        walletFrom.setBalance(walletFrom.getBalance().subtract(amount));
+        walletTo.setBalance(walletTo.getBalance().add(amount));
+
+        walletRepository.save(walletFrom);
+        walletRepository.save(walletTo);
+
+        paymentRequestFrom.setStatus(Status.DONE);
+        paymentRequestTo.setStatus(Status.DONE);
+        paymentRequestRepository.save(paymentRequestFrom);
+        paymentRequestRepository.save(paymentRequestTo);
+
+        Transaction transaction = transactionMapper.map(transactionDto);
+        transaction.setWallet(walletFrom);
+        transaction.setPaymentRequest(paymentRequestFrom);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        return transactionMapper.map(savedTransaction);
+    }
+
+    private void checkTransactionAndWallet(TransactionDto transactionDto, PaymentRequest paymentRequest){
+        if(!transactionDto.getWalletUid().equals(paymentRequest.getWallet().getUid().toString())){
+            throw new FailedTransactionException("Wrong wallets.");
+        }
+        if(transactionDto.getAmount().compareTo(paymentRequest.getAmount()) != 0){
+            throw new FailedTransactionException("Wrong amount.");
+        }
+        if(Status.DONE.equals(paymentRequest.getStatus())){
+            throw new FailedTransactionException("Payment already applied.");
+        }
     }
 
     public TransactionDto transactionStatus(UUID uid){

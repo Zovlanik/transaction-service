@@ -31,10 +31,12 @@ public class Transaction {
     private String walletName;
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
+    @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 32)
-    private String type;
+    private TransactionType type;
+    @Enumerated(EnumType.STRING)
     @Column(name = "state", nullable = false, length = 32)
-    private String state;
+    private Status state;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payment_request_uid", referencedColumnName = "uid", nullable = false)
     private PaymentRequest paymentRequest;

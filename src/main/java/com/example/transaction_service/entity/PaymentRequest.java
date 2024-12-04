@@ -28,7 +28,8 @@ public class PaymentRequest {
     @JoinColumn(name = "wallet_uid", referencedColumnName = "uid", nullable = false)
     private Wallet wallet;
     private BigDecimal amount;
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private Status status;
     private String comment;
     private Long paymentMethodId;
 }
